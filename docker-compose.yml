@@ -1,38 +1,64 @@
 version: '3.8'
 
 services:
-  nextjs:
+  #Production
+  # Untuk produksi, gunakan build dari Dockerfile
+  hmftweb-production:
     build:
       context: ./hmftweb
-    container_name: hmftweb-nextjs-app
-    ports:
-      - "3001:3000"
+      dockerfile: Dockerfile
+    container_name: hmftweb-production
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      NODE_ENV: production
+      CHOKIDAR_USEPOLLING: true
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      - db
+    ports:
+      - "${PROD_PORT}:3000"
+    
+    
+  #Development
+  # Untuk development, gunakan volume untuk sinkronisasi kode
+  hmftweb-development:
+    build:
+      context: ./hmftweb
+    container_name: hmftweb-development
+    restart: always
+    ports:
+      - "${DEV_PORT}:3000"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL}
     volumes:
       - ./hmftweb:/app
     depends_on:
       - db
 
+
+  #Database
+  # Gunakan PostgreSQL sebagai database
   db:
     image: postgres:15
     container_name: hmftweb-postgres-db
     restart: always
     environment:
-      POSTGRES_USER:  ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "5433:5432"
+      POSTGRES_DB: hmftdb
+      POSTGRES_USER: hmftuser
+      POSTGRES_PASSWORD: hmftpass
     volumes:
       - db_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT}:5432"
 
+
+  #Adminer
+  # Gunakan Adminer untuk manajemen database
   adminer:
     image: adminer
-    container_name: hmftweb-adminer
     restart: always
     ports:
-      - "8091:8080"
+      - "${ADMINER_PORT}:8080"
     depends_on:
       - db
 
